@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tools for TISI — Triple E Technology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:        #1B3A5C;
+  --navy-mid:    #2E5F8A;
+  --navy-light:  #D6E8F7;
+  --navy-vlight: #EEF5FB;
+  --orange:      #E07B00;
+  --orange-light:#FFF0D6;
+  --green:       #1A6B38;
+  --green-light: #E8F5E9;
+  --bg:          #F0F4F8;
+  --white:       #FFFFFF;
+  --text:        #1C1C1C;
+  --text2:       #555;
+  --border:      #BDBDBD;
+  --radius:      10px;
+  --shadow:      0 2px 12px rgba(27,58,92,0.10);
+  --shadow-lg:   0 6px 28px rgba(27,58,92,0.16);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  background: linear-gradient(135deg, #1B3A5C 0%, #2E5F8A 60%, #1B3A5C 100%);
+  color: #fff;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 32px 32px;
+  position: relative;
+  z-index: 1;
+}
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.logo-badge {
+  width: 64px;
+  height: 64px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.header-titles { flex: 1; }
+.header-titles h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+.header-titles .subtitle {
+  font-size: 14px;
+  opacity: 0.75;
+  margin-top: 4px;
+}
+.header-titles .org-tag {
+  display: inline-block;
+  margin-top: 10px;
+  background: rgba(224,123,0,0.85);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+}
+.header-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+}
+.hstat {
+  text-align: center;
+}
+.hstat .num {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+.hstat .lbl {
+  font-size: 12px;
+  opacity: 0.65;
+  margin-top: 2px;
+}
+
+/* ── Main ── */
+.main {
+  max-width: 1100px;
+  margin: 32px auto;
+  padding: 0 32px 48px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--navy-mid);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--navy-light);
+}
+
+/* ── Tool Grid ── */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.tool-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1px solid #e2eaf2;
+  transition: box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.tool-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+  padding: 18px 20px 14px;
+  color: #fff;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.card-icon {
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.card-title-area { flex: 1; }
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.card-subtitle {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 3px;
+}
+
+.card-body {
+  padding: 16px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-desc {
+  font-size: 13.5px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--navy-vlight);
+  color: var(--navy);
+}
+.tag.orange { background: var(--orange-light); color: var(--orange); }
+.tag.green  { background: var(--green-light);  color: var(--green);  }
+
+.card-footer {
+  padding: 12px 20px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+.btn-open {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--navy);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 0;
+  border-radius: 8px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-open:hover { background: var(--navy-mid); }
+
+/* ── Empty placeholder card ── */
+.card-coming {
+  background: var(--white);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #aaa;
+  min-height: 200px;
+}
+.card-coming .icon { font-size: 32px; opacity: 0.4; }
+.card-coming .txt { font-size: 13px; text-align: center; line-height: 1.6; }
+
+/* ── Footer ── */
+.footer {
+  background: var(--navy);
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  padding: 20px 32px;
+  font-size: 12.5px;
+}
+.footer span { color: rgba(255,255,255,0.9); font-weight: 600; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .header-inner { padding: 24px 18px 20px; }
+  .header-titles h1 { font-size: 20px; }
+  .header-stats { gap: 16px; }
+  .main { padding: 0 16px 40px; margin-top: 24px; }
+  .tool-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="logo-badge">🏛️</div>
+      <div class="header-titles">
+        <h1>เครื่องมือสนับสนุนโครงการ สมอ.</h1>
+        <p class="subtitle">ระบบตรวจวัด วิเคราะห์ และบันทึกการใช้พลังงานสำหรับอาคาร</p>
+        <span class="org-tag">TISI Project — Triple E Technology</span>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="hstat">
+        <div class="num" id="tool-count">1</div>
+        <div class="lbl">เครื่องมือ</div>
+      </div>
+      <div class="hstat">
+        <div class="num">อาคาร</div>
+        <div class="lbl">ประเภทอาคาร</div>
+      </div>
+      <div class="hstat">
+        <div class="num">EnMS</div>
+        <div class="lbl">มาตรฐาน</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+  <div class="section-title">🔧 เครื่องมือที่พร้อมใช้งาน</div>
+
+  <div class="tool-grid">
+
+    <!-- Card 1: EnMS TISI Building -->
+    <div class="tool-card">
+      <div class="card-header">
+        <div class="card-icon">❄️</div>
+        <div class="card-title-area">
+          <div class="card-title">ระบบตรวจวัดสมรรถนะ AC</div>
+          <div class="card-subtitle">Priority 1 — อาคาร สมอ.</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-desc">
+          บันทึกข้อมูลเครื่องปรับอากาศและอุปกรณ์ที่ใช้พลังงานในอาคาร
+          เพื่อวางแผนตรวจวัดและบันทึกข้อมูลการใช้พลังงานตามแนวทาง EnMS สมอ.
+        </p>
+        <div class="tag-row">
+          <span class="tag">EnMS</span>
+          <span class="tag orange">TISI</span>
+          <span class="tag green">อาคาร</span>
+          <span class="tag">เครื่องปรับอากาศ</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a class="btn-open" href="tools/EnMS_TISI_Building.html">📂 เปิดใช้งาน</a>
+      </div>
+    </div>
+
+    <!-- Placeholder for future tools -->
+    <div class="card-coming">
+      <div class="icon">➕</div>
+      <div class="txt">เครื่องมือถัดไป<br>กำลังพัฒนา</div>
+    </div>
+
+    <div class="card-coming">
+      <div class="icon">➕</div>
+      <div class="txt">เครื่องมือถัดไป<br>กำลังพัฒนา</div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <span>Triple E Technology Co., Ltd.</span> &nbsp;·&nbsp; พัฒนาโดย อ.หนึ่ง กลับทวี &nbsp;·&nbsp; โครงการ สมอ. (TISI)
+</footer>
+
+</body>
+</html>
