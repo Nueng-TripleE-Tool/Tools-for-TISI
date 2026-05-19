@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบตรวจวัดสมรรถนะ AC Priority 1 — อาคาร สมอ.</title>
+<style>
+  :root {
+    --primary: #1B3A5C;
+    --primary-mid: #2E5F8A;
+    --primary-light: #D6E8F7;
+    --primary-vlight: #EEF5FB;
+    --orange: #E07B00;
+    --orange-light: #FFF0D6;
+    --green: #1A6B38;
+    --green-light: #E8F5E9;
+    --red: #A32D2D;
+    --red-light: #FAE0E0;
+    --amber: #856400;
+    --amber-light: #FFFDE7;
+    --gray: #4A4A4A;
+    --gray-light: #F5F5F5;
+    --border: #BDBDBD;
+    --white: #FFFFFF;
+    --bg: #F4F6F9;
+    --text: #1C1C1C;
+    --text2: #555;
+    --text3: #888;
+    --success-bg: #E8F5E9; --success-text: #1A6B38;
+    --warn-bg: #FFF3E0;    --warn-text: #E65100;
+    --danger-bg: #FFEBEE;  --danger-text: #B71C1C;
+    --info-bg: #E3F2FD;    --info-text: #0C447C;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'TH SarabunPSK', 'Sarabun', 'Kanit', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap');
+
+  /* Layout */
+  .app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--primary); color: #fff; padding: 0; display: flex; flex-direction: column; }
+  .sidebar-header { padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,.12); }
+  .sidebar-header h1 { font-size: 15px; font-weight: 600; line-height: 1.4; }
+  .sidebar-header p { font-size: 12px; opacity: .65; margin-top: 3px; }
+  .sidebar-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 14px 10px; }
+  .stat-mini { background: rgba(255,255,255,.08); border-radius: 6px; padding: 8px 10px; text-align: center; }
+  .stat-mini .n { font-size: 20px; font-weight: 600; }
+  .stat-mini .l { font-size: 11px; opacity: .65; }
+  .stat-mini.red .n { color: #ff8a80; }
+  .stat-mini.amber .n { color: #ffd54f; }
+  .stat-mini.green .n { color: #a5d6a7; }
+  .ac-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .ac-item { padding: 9px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
+  .ac-item:hover { background: rgba(255,255,255,.08); }
+  .ac-item.active { background: rgba(255,255,255,.14); border-left-color: #64b5f6; }
+  .ac-item.saved { border-left-color: #a5d6a7; }
+  .ac-item.saved.active { border-left-color: #64b5f6; }
+  .ac-item .ac-name { font-size: 13px; font-weight: 500; }
+  .ac-item .ac-sub { font-size: 11px; opacity: .6; margin-top: 1px; }
+  .ac-item .ac-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
+  .badge-red { background: rgba(244,67,54,.3); color: #ff8a80; }
+  .badge-amber { background: rgba(255,193,7,.25); color: #ffd54f; }
+  .badge-green { background: rgba(76,175,80,.25); color: #a5d6a7; }
+  .badge-none { background: rgba(255,255,255,.1); color: rgba(255,255,255,.5); }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; }
+  .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 0; height: 52px; }
+  .tab-btn { height: 52px; padding: 0 18px; font-size: 14px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; color: var(--text2); font-family: inherit; transition: all .15s; }
+  .tab-btn:hover { color: var(--primary); background: var(--primary-vlight); }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+  .tab-btn i { font-size: 15px; vertical-align: -2px; margin-right: 5px; }
+  .topbar-right { margin-left: auto; display: flex; gap: 8px; }
+  .content { flex: 1; padding: 20px 24px; overflow-y: auto; }
+
+  /* Cards */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .card-title i { font-size: 16px; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+  /* Form */
+  .field { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .field input, .field select { width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; font-family: inherit; color: var(--text); background: var(--white); transition: border .15s; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--primary-mid); box-shadow: 0 0 0 2px var(--primary-light); }
+  .field input::placeholder { color: var(--text3); }
+
+  /* Metric cards */
+  .metric { background: var(--gray-light); border-radius: var(--radius); padding: 10px 12px; }
+  .metric .label { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+  .metric .value { font-size: 20px; font-weight: 600; color: var(--primary); }
+  .metric .sub { font-size: 11px; color: var(--text3); margin-top: 1px; font-style: italic; }
+  .eer-bar-wrap { height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin: 4px 0 2px; }
+  .eer-bar { height: 100%; border-radius: 3px; transition: width .5s, background .5s; }
+
+  /* Verdict box */
+  .verdict { border-radius: var(--radius); padding: 12px 14px; display: none; }
+  .verdict.show { display: flex; gap: 10px; align-items: flex-start; }
+  .verdict i { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .verdict-body { flex: 1; }
+  .verdict-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .verdict-detail { font-size: 12px; line-height: 1.6; }
+  .verdict-right { text-align: right; flex-shrink: 0; }
+  .verdict-right .lbl { font-size: 11px; color: var(--text2); }
+  .verdict-right .val { font-size: 16px; font-weight: 600; }
+  .v-red { background: var(--danger-bg); }
+  .v-red i, .v-red .verdict-title, .v-red .verdict-detail, .v-red .val { color: var(--danger-text); }
+  .v-amber { background: var(--warn-bg); }
+  .v-amber i, .v-amber .verdict-title, .v-amber .verdict-detail, .v-amber .val { color: var(--warn-text); }
+  .v-green { background: var(--success-bg); }
+  .v-green i, .v-green .verdict-title, .v-green .verdict-detail, .v-green .val { color: var(--success-text); }
+
+  /* Buttons */
+  .btn { height: 36px; padding: 0 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); color: var(--text); font-size: 13px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all .15s; }
+  .btn:hover { background: var(--gray-light); }
+  .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.primary:hover { background: var(--primary-mid); }
+  .btn.danger { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn i { font-size: 15px; }
+
+  /* AC info bar */
+  .ac-infobar { background: var(--primary-vlight); border: 1px solid var(--primary-light); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; display: none; }
+  .ac-infobar.show { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .ac-infobar .item { font-size: 12px; }
+  .ac-infobar .item span { color: var(--text3); }
+  .ac-infobar .item strong { color: var(--primary); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--primary); }
+  thead th { padding: 8px 10px; color: #fff; font-weight: 500; text-align: center; border: 1px solid var(--primary-mid); white-space: nowrap; }
+  thead th:first-child { text-align: left; }
+  tbody tr { border-bottom: 1px solid #eee; }
+  tbody tr:hover { background: var(--primary-vlight); }
+  tbody td { padding: 7px 10px; }
+  tbody td:first-child { font-weight: 500; color: var(--primary); }
+  .td-center { text-align: center; }
+  .td-right { text-align: right; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .badge-r { background: var(--danger-bg); color: var(--danger-text); }
+  .badge-a { background: var(--warn-bg); color: var(--warn-text); }
+  .badge-g { background: var(--success-bg); color: var(--success-text); }
+
+  /* Summary finance row */
+  .fin-row { background: var(--primary-vlight); border: 1px solid var(--primary-light); border-radius: var(--radius); padding: 12px 16px; margin-top: 12px; display: none; }
+  .fin-row.show { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .fin-row .fi { font-size: 12px; }
+  .fin-row .fi span { color: var(--text3); display: block; margin-bottom: 2px; }
+  .fin-row .fi strong { font-size: 15px; }
+
+  /* Report */
+  .rpt-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+  pre#rpt { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; font-size: 12.5px; line-height: 1.75; color: var(--text); white-space: pre-wrap; font-family: 'Sarabun', 'TH SarabunPSK', monospace; max-height: 70vh; overflow-y: auto; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--primary); color: #fff; padding: 10px 18px; border-radius: var(--radius); font-size: 13px; display: none; z-index: 999; max-width: 420px; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+  .toast.show { display: block; animation: slideIn .2s ease; }
+  @keyframes slideIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* Placeholder */
+  .placeholder { text-align: center; padding: 40px 20px; color: var(--text3); }
+  .placeholder i { font-size: 40px; margin-bottom: 10px; display: block; }
+
+  /* Progress bar */
+  .progress-bar { height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; background: var(--primary-mid); border-radius: 3px; transition: width .4s; }
+
+  /* Demo badge */
+  .demo-tag { background: var(--amber-light); color: var(--amber); font-size: 11px; padding: 2px 8px; border-radius: 8px; display: inline-block; }
+  .saved-tag { background: var(--green-light); color: var(--green); font-size: 11px; padding: 2px 8px; border-radius: 8px; display: inline-block; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .app-shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+  @media print {
+    .topbar, .sidebar, .rpt-actions, .btn { display: none !important; }
+    pre#rpt { border: none; padding: 0; max-height: none; }
+  }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h1><i class="ti ti-wind" style="font-size:16px;vertical-align:-2px;margin-right:4px"></i>AC Priority 1</h1>
+    <p>อาคาร สมอ. | 27 เครื่อง</p>
+  </div>
+  <div class="sidebar-stats">
+    <div class="stat-mini"><div class="n" id="s-done">0</div><div class="l">บันทึกแล้ว</div></div>
+    <div class="stat-mini red"><div class="n" id="s-red">0</div><div class="l">เปลี่ยนทันที</div></div>
+    <div class="stat-mini amber"><div class="n" id="s-amb">0</div><div class="l">แผน 1–2 ปี</div></div>
+    <div class="stat-mini green"><div class="n" id="s-grn">0</div><div class="l">ดูแลรักษา</div></div>
+  </div>
+  <div style="padding:6px 14px 4px;font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:.05em">รายการเครื่อง</div>
+  <div class="ac-list" id="ac-list"></div>
+</aside>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="main">
+  <div class="topbar">
+    <button class="tab-btn active" onclick="showTab('measure',this)"><i class="ti ti-ruler-measure"></i>ตรวจวัด</button>
+    <button class="tab-btn" onclick="showTab('summary',this)"><i class="ti ti-table"></i>สรุปผล</button>
+    <button class="tab-btn" onclick="showTab('report',this)"><i class="ti ti-file-text"></i>รายงานผู้บริหาร</button>
+    <div class="topbar-right">
+      <div style="font-size:12px;color:var(--text3);align-self:center">วันที่: <input type="date" id="meas-date" style="border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-family:inherit;font-size:12px;color:var(--text)"></div>
+      <button class="btn" onclick="loadDemo()"><i class="ti ti-database-import"></i>โหลดข้อมูล Demo</button>
+    </div>
+  </div>
+
+  <!-- TAB: ตรวจวัด -->
+  <div id="tab-measure" class="content">
+    <div class="placeholder" id="placeholder-select">
+      <i class="ti ti-hand-finger"></i>
+      <p>เลือกเครื่องจากรายการทางซ้าย<br>เพื่อเริ่มบันทึกข้อมูลตรวจวัด</p>
+    </div>
+
+    <div id="form-area" style="display:none">
+      <div class="ac-infobar show" id="ac-infobar">
+        <div class="item"><span>เลขครุภัณฑ์</span><strong id="i-asset">—</strong> <span id="i-dtag"></span></div>
+        <div class="item"><span>BTU / ปีที่ซื้อ / อายุ</span><strong id="i-btu-yr">—</strong></div>
+        <div class="item"><span>เจ้าของ / ที่ตั้ง</span><strong id="i-owner-loc">—</strong></div>
+        <div class="item"><span>คะแนน P1 / EER Nameplate</span><strong id="i-score-eer">—</strong></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:14px">
+        <!-- ไฟฟ้า -->
+        <div class="card">
+          <div class="card-title"><i class="ti ti-bolt"></i>ค่าไฟฟ้าที่วัดได้</div>
+          <div class="grid-2" style="gap:10px">
+            <div class="field"><label>แรงดัน V_L1 (V)</label><input type="number" id="v1" placeholder="220" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>แรงดัน V_L2 (V)</label><input type="number" id="v2" placeholder="220" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>กระแส I_L1 (A)</label><input type="number" id="a1" placeholder="0.0" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>กระแส I_L2 (A)</label><input type="number" id="a2" placeholder="0.0" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>กระแส I_L3 (A)</label><input type="number" id="a3" placeholder="0.0" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>Power Factor (PF)</label><input type="number" id="pf" placeholder="0.85" step="0.01" min="0.5" max="1" oninput="calc()"></div>
+          </div>
+          <div style="margin-top:10px;background:var(--primary-vlight);border-radius:var(--radius);padding:8px 12px;display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:12px;color:var(--text2)">กำลังไฟฟ้าจริง (kW) = √3 × V_avg × I_avg × PF ÷ 1000</span>
+            <span id="kw-out" style="font-size:19px;font-weight:600;color:var(--primary)">—</span>
+          </div>
+        </div>
+
+        <!-- อุณหภูมิ -->
+        <div class="card">
+          <div class="card-title"><i class="ti ti-temperature"></i>อุณหภูมิและสภาพแวดล้อม</div>
+          <div class="grid-2" style="gap:10px">
+            <div class="field"><label>T ลมออก / Supply (°C)</label><input type="number" id="t-s" placeholder="14" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>T ลมกลับ / Return (°C)</label><input type="number" id="t-r" placeholder="27" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>T Condenser ผิวนอก (°C)</label><input type="number" id="t-c" placeholder="48" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>T ห้อง Dry Bulb (°C)</label><input type="number" id="t-room" placeholder="28" step="0.1" oninput="calc()"></div>
+            <div class="field"><label>ความชื้น RH (%)</label><input type="number" id="rh" placeholder="65" step="1" oninput="calc()"></div>
+            <div class="field"><label>สภาพ Filter</label>
+              <select id="ff" onchange="calc()">
+                <option value="1.00">สะอาดดี (factor 1.00)</option>
+                <option value="0.95">สกปรกเล็กน้อย (0.95)</option>
+                <option value="0.90">สกปรกปานกลาง (0.90)</option>
+                <option value="0.85">อุดตัน (0.85)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ผลคำนวณ -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title"><i class="ti ti-calculator"></i>ผลการคำนวณสมรรถนะ</div>
+        <div class="grid-4" style="margin-bottom:12px">
+          <div class="metric">
+            <div class="label">ΔT ลมเข้า-ออก (°C)</div>
+            <div class="value" id="dt-out">—</div>
+            <div class="sub">เป้าหมาย 8–12°C</div>
+          </div>
+          <div class="metric">
+            <div class="label">กำลังไฟจริง (kW)</div>
+            <div class="value" id="kw2">—</div>
+            <div class="sub">Clamp Meter 3-Phase</div>
+          </div>
+          <div class="metric">
+            <div class="label">EER จริง (BTU/W)</div>
+            <div class="value" id="eer-out">—</div>
+            <div class="eer-bar-wrap"><div class="eer-bar" id="eer-bar" style="width:0%"></div></div>
+            <div class="sub">เบอร์ 5 ≥ 11.5 BTU/W</div>
+          </div>
+          <div class="metric">
+            <div class="label">ประสิทธิภาพ vs เบอร์ 5</div>
+            <div class="value" id="eff-out">—</div>
+            <div class="sub">เทียบ EER 11.5 BTU/W</div>
+          </div>
+        </div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="field" style="flex:1;min-width:200px">
+          <label>หมายเหตุ / สภาพทั่วไป</label>
+          <input type="text" id="note" placeholder="เช่น มีเสียงดัง, สาย Refrigerant เก่า, Filter อุดตัน...">
+        </div>
+        <button class="btn primary" onclick="saveMeasure()"><i class="ti ti-device-floppy"></i>บันทึกผล</button>
+        <button class="btn" onclick="clearForm()"><i class="ti ti-refresh"></i>ล้างค่า</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: สรุปผล -->
+  <div id="tab-summary" class="content" style="display:none">
+    <div class="grid-4" style="margin-bottom:16px">
+      <div class="metric" style="background:var(--primary-vlight)">
+        <div class="label">ตรวจวัดแล้ว</div>
+        <div class="value" id="sum-done">0</div>
+        <div class="sub">จาก 27 เครื่อง</div>
+        <div class="progress-bar"><div class="progress-fill" id="sum-prog" style="width:0%"></div></div>
+      </div>
+      <div class="metric" style="background:var(--danger-bg)">
+        <div class="label" style="color:var(--danger-text)">เปลี่ยนทันที (EER &lt;7)</div>
+        <div class="value" style="color:var(--danger-text)" id="sum-red">0</div>
+        <div class="sub" style="color:var(--danger-text)">เครื่อง</div>
+      </div>
+      <div class="metric" style="background:var(--warn-bg)">
+        <div class="label" style="color:var(--warn-text)">แผน 1–2 ปี (EER 7–9)</div>
+        <div class="value" style="color:var(--warn-text)" id="sum-amb">0</div>
+        <div class="sub" style="color:var(--warn-text)">เครื่อง</div>
+      </div>
+      <div class="metric" style="background:var(--success-bg)">
+        <div class="label" style="color:var(--success-text)">ดูแลรักษา (EER &gt;9)</div>
+        <div class="value" style="color:var(--success-text)" id="sum-grn">0</div>
+        <div class="sub" style="color:var(--success-text)">เครื่อง</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-table"></i>ผลการตรวจวัดทั้งหมด (เรียงจาก EER ต่ำสุด)</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left;min-width:110px">ครุภัณฑ์</th>
+              <th>BTU</th><th>kW จริง</th><th>EER จริง</th>
+              <th>ΔT°C</th><th>T Cond</th><th>RH%</th>
+              <th>ประหยัด/ปี (บ.)</th><th>ผลสรุป</th><th>หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody id="sum-body">
+            <tr><td colspan="10" class="td-center" style="padding:24px;color:var(--text3);font-style:italic">ยังไม่มีข้อมูล — กลับไปแท็บ "ตรวจวัด" เพื่อบันทึกผล</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="fin-row" id="fin-row">
+        <div class="fi"><span>งบทดแทนรวม</span><strong id="f-cost">—</strong></div>
+        <div class="fi"><span>ประหยัดรวม/ปี</span><strong id="f-save" style="color:var(--green)">—</strong></div>
+        <div class="fi"><span>Simple Payback</span><strong id="f-pb">—</strong></div>
+        <div class="fi"><span>ลด CO₂/ปี</span><strong id="f-co2" style="color:var(--primary-mid)">—</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: รายงาน -->
+  <div id="tab-report" class="content" style="display:none">
+    <div class="rpt-actions">
+      <button class="btn primary" onclick="copyReport()"><i class="ti ti-copy"></i>คัดลอกรายงาน</button>
+      <button class="btn" onclick="window.print()"><i class="ti ti-printer"></i>พิมพ์</button>
+      <span style="font-size:12px;color:var(--text3);align-self:center;margin-left:4px">* วางข้อความในโปรแกรม Word หรือพิมพ์ได้ทันที</span>
+    </div>
+    <pre id="rpt">กรุณาบันทึกข้อมูลก่อน แล้วกลับมาดูรายงาน</pre>
+  </div>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ACS=[
+  {a:'สมอ.6/364',  btu:480000,yr:2540,age:28,owner:'ศส.',  loc:'ดาดฟ้า/Server', score:100,cost:350000,is24:true,
+   demo:{v1:222,v2:221,a1:89,a2:88,a3:90,pf:0.82,ts:20,tr:30,tc:58,room:27,rh:72,ff:'0.85',note:'Filter อุดตันรุนแรง เสียงผิดปกติ'}},
+  {a:'สมอ.6/365',  btu:480000,yr:2540,age:28,owner:'ศส.',  loc:'ดาดฟ้า/Server', score:100,cost:350000,is24:true,
+   demo:{v1:220,v2:219,a1:85,a2:86,a3:84,pf:0.83,ts:21,tr:31,tc:57,room:28,rh:70,ff:'0.85',note:'Refrigerant รั่ว ΔT ต่ำผิดปกติ'}},
+  {a:'สมอ.6/76/1', btu:203000,yr:2532,age:36,owner:'สล.',  loc:'ชั้น2 ห้องประชุม200',score:82,cost:180000,is24:false,
+   demo:{v1:218,v2:220,a1:29,a2:30,a3:28,pf:0.85,ts:16,tr:26,tc:52,room:29,rh:68,ff:'0.90',note:'อายุ 36 ปี คอมเพรสเซอร์เสียงดัง'}},
+  {a:'สมอ.6/76/2', btu:203000,yr:2532,age:36,owner:'สล.',  loc:'ชั้น2 ห้องประชุม200',score:82,cost:180000,is24:false,
+   demo:{v1:219,v2:218,a1:31,a2:30,a3:31,pf:0.84,ts:17,tr:26,tc:53,room:29,rh:67,ff:'0.90',note:'ท่อน้ำยาเก่า ฉนวนแตก'}},
+  {a:'สมอ.6/427',  btu:36000, yr:2549,age:19,owner:'สล.',  loc:'ชั้น3 ฟิตเนส400',score:55,cost:45000,is24:false,
+   demo:{v1:222,v2:223,a1:6.2,a2:6.3,a3:6.1,pf:0.86,ts:14,tr:26,tc:48,room:30,rh:65,ff:'0.95',note:'สภาพพอใช้'}},
+  {a:'สมอ.6/428',  btu:36000, yr:2549,age:19,owner:'สล.',  loc:'ชั้น3 ฟิตเนส400',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:222,a1:6.4,a2:6.2,a3:6.3,pf:0.86,ts:13,tr:26,tc:47,room:30,rh:64,ff:'1.00',note:''}},
+  {a:'สมอ.6/429',  btu:36000, yr:2549,age:19,owner:'กช.',  loc:'ชั้น5',score:55,cost:45000,is24:false,
+   demo:{v1:220,v2:220,a1:6.5,a2:6.6,a3:6.4,pf:0.85,ts:14,tr:25,tc:49,room:29,rh:66,ff:'0.95',note:''}},
+  {a:'สมอ.6/430',  btu:36000, yr:2549,age:19,owner:'สล.',  loc:'ชั้น2 ฟิตเนส',score:55,cost:45000,is24:false,
+   demo:{v1:219,v2:220,a1:6.8,a2:6.7,a3:6.9,pf:0.84,ts:15,tr:25,tc:50,room:28,rh:63,ff:'0.90',note:'Filter สกปรกปานกลาง'}},
+  {a:'สมอ.6/431',  btu:36000, yr:2549,age:19,owner:'กช.',  loc:'ชั้น5',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:220,a1:6.3,a2:6.2,a3:6.4,pf:0.87,ts:13,tr:26,tc:47,room:29,rh:62,ff:'1.00',note:''}},
+  {a:'สมอ.6/432',  btu:36000, yr:2549,age:19,owner:'กช.',  loc:'ชั้น5',score:55,cost:45000,is24:false,
+   demo:{v1:222,v2:221,a1:6.6,a2:6.5,a3:6.7,pf:0.85,ts:14,tr:26,tc:48,room:29,rh:65,ff:'0.95',note:''}},
+  {a:'สมอ.6/433',  btu:36000, yr:2549,age:19,owner:'สล.',  loc:'ชั้น2 ฟิตเนส',score:55,cost:45000,is24:false,
+   demo:{v1:220,v2:219,a1:6.4,a2:6.3,a3:6.5,pf:0.86,ts:14,tr:25,tc:49,room:28,rh:63,ff:'1.00',note:''}},
+  {a:'สมอ.6/438',  btu:36000, yr:2549,age:19,owner:'สล.',  loc:'ชั้น2 ฟิตเนส',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:221,a1:6.9,a2:7.0,a3:6.8,pf:0.84,ts:15,tr:25,tc:51,room:29,rh:65,ff:'0.90',note:'ล้าง Filter แล้ว EER ยังต่ำ'}},
+  {a:'สมอ.6/439/49',btu:36000,yr:2549,age:19,owner:'สล.',  loc:'ชั้น2 ห้องเก็บของ',score:55,cost:45000,is24:false,
+   demo:{v1:218,v2:219,a1:7.1,a2:7.0,a3:7.2,pf:0.83,ts:15,tr:25,tc:52,room:29,rh:64,ff:'0.90',note:'คอมเพรสเซอร์ร้อน'}},
+  {a:'สมอ.6/456',  btu:36167, yr:2550,age:18,owner:'กส.',  loc:'ชั้น1',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:222,a1:6.1,a2:6.0,a3:6.2,pf:0.87,ts:13,tr:26,tc:46,room:28,rh:61,ff:'1.00',note:''}},
+  {a:'สมอ.6/457',  btu:36167, yr:2550,age:18,owner:'กส.',  loc:'ชั้น1',score:55,cost:45000,is24:false,
+   demo:{v1:220,v2:221,a1:6.2,a2:6.1,a3:6.3,pf:0.87,ts:13,tr:26,tc:46,room:28,rh:62,ff:'1.00',note:'สภาพดีกว่าคาด'}},
+  {a:'สมอ.6/458',  btu:36167, yr:2550,age:18,owner:'กส.',  loc:'ชั้น1',score:55,cost:45000,is24:false,
+   demo:{v1:219,v2:220,a1:6.4,a2:6.3,a3:6.5,pf:0.86,ts:14,tr:25,tc:48,room:29,rh:63,ff:'1.00',note:''}},
+  {a:'สมอ.6/507',  btu:36000, yr:2552,age:16,owner:'ศส.',  loc:'ลอย ศส.',score:55,cost:45000,is24:false,
+   demo:{v1:222,v2:223,a1:5.9,a2:5.8,a3:6.0,pf:0.88,ts:12,tr:26,tc:45,room:28,rh:60,ff:'1.00',note:'อายุน้อยกว่ากลุ่ม สภาพดี'}},
+  {a:'สมอ.6/508',  btu:36000, yr:2552,age:16,owner:'ศส.',  loc:'ลอย ศส.',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:222,a1:6.0,a2:5.9,a3:6.1,pf:0.88,ts:13,tr:26,tc:45,room:28,rh:61,ff:'1.00',note:''}},
+  {a:'สมอ.6/509',  btu:36000, yr:2552,age:16,owner:'ศส.',  loc:'ลอย ศส.',score:55,cost:45000,is24:false,
+   demo:{v1:220,v2:221,a1:6.1,a2:6.0,a3:6.2,pf:0.87,ts:13,tr:26,tc:46,room:28,rh:62,ff:'1.00',note:''}},
+  {a:'สมอ.6/510',  btu:36000, yr:2552,age:16,owner:'ศส.',  loc:'ลอย ศส.',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:220,a1:6.3,a2:6.2,a3:6.4,pf:0.87,ts:14,tr:26,tc:47,room:29,rh:63,ff:'0.95',note:'Filter สกปรกเล็กน้อย'}},
+  {a:'สมอ.6/511',  btu:36000, yr:2552,age:16,owner:'ศส.',  loc:'ลอย ศส.',score:55,cost:45000,is24:false,
+   demo:{v1:220,v2:221,a1:6.2,a2:6.1,a3:6.3,pf:0.87,ts:13,tr:26,tc:46,room:28,rh:61,ff:'1.00',note:''}},
+  {a:'สมอ.6/512',  btu:36000, yr:2552,age:16,owner:'ศส.',  loc:'ลอย ศส.',score:55,cost:45000,is24:false,
+   demo:{v1:219,v2:220,a1:6.4,a2:6.3,a3:6.5,pf:0.86,ts:14,tr:26,tc:47,room:29,rh:62,ff:'0.95',note:''}},
+  {a:'สมอ.6/528',  btu:36000, yr:2552,age:16,owner:'สกมช.',loc:'ชั้น3',score:55,cost:45000,is24:false,
+   demo:{v1:222,v2:221,a1:6.0,a2:5.9,a3:6.1,pf:0.88,ts:12,tr:26,tc:44,room:28,rh:60,ff:'1.00',note:'สภาพดี'}},
+  {a:'สมอ.6/529',  btu:36000, yr:2552,age:16,owner:'สกมช.',loc:'ชั้น3',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:222,a1:6.1,a2:6.0,a3:6.2,pf:0.88,ts:12,tr:26,tc:45,room:28,rh:60,ff:'1.00',note:''}},
+  {a:'สมอ.6/530',  btu:36000, yr:2552,age:16,owner:'สกมช.',loc:'ชั้น3',score:55,cost:45000,is24:false,
+   demo:{v1:220,v2:221,a1:6.3,a2:6.2,a3:6.4,pf:0.87,ts:13,tr:26,tc:46,room:28,rh:61,ff:'1.00',note:''}},
+  {a:'สมอ.6/531',  btu:36000, yr:2552,age:16,owner:'กส.',  loc:'ชั้น1',score:55,cost:45000,is24:false,
+   demo:{v1:221,v2:220,a1:6.2,a2:6.1,a3:6.3,pf:0.87,ts:13,tr:26,tc:45,room:28,rh:62,ff:'1.00',note:''}},
+  {a:'สมอ.6/532',  btu:36000, yr:2552,age:16,owner:'กส.',  loc:'ชั้น1',score:55,cost:45000,is24:false,
+   demo:{v1:220,v2:220,a1:6.4,a2:6.3,a3:6.5,pf:0.86,ts:14,tr:25,tc:47,room:29,rh:63,ff:'0.95',note:''}},
+];
+
+let curIdx=null, DB={};
+document.getElementById('meas-date').value=new Date().toISOString().split('T')[0];
+
+/* Build sidebar */
+const list=document.getElementById('ac-list');
+ACS.forEach((ac,i)=>{
+  const el=document.createElement('div');
+  el.className='ac-item';el.id='li-'+i;
+  const sc=ac.score===100?'🔴 ':ac.score>=82?'🟠 ':'🟡 ';
+  el.innerHTML=`<div class="ac-name">${sc}${ac.a}</div><div class="ac-sub">${(ac.btu/1000).toFixed(0)}k BTU · ปี${ac.yr} · ${ac.owner}</div>`;
+  el.onclick=()=>selectAC(i);
+  list.appendChild(el);
+});
+
+function g(id){return parseFloat(document.getElementById(id).value)||0;}
+function sv(id,v){document.getElementById(id).value=v;}
+
+function selectAC(idx){
+  if(curIdx!==null)document.getElementById('li-'+curIdx).classList.remove('active');
+  curIdx=idx;
+  document.getElementById('li-'+idx).classList.add('active');
+  document.getElementById('placeholder-select').style.display='none';
+  document.getElementById('form-area').style.display='block';
+  const ac=ACS[idx];
+  document.getElementById('i-asset').textContent=ac.a;
+  document.getElementById('i-btu-yr').textContent=`${ac.btu.toLocaleString()} BTU / ปี ${ac.yr} / อายุ ${ac.age} ปี`;
+  document.getElementById('i-owner-loc').textContent=`${ac.owner} / ${ac.loc}`;
+  document.getElementById('i-score-eer').textContent=`${ac.score}/100 / EER ~${ac.btu>=400000?6.0:ac.btu>=200000?5.5:7.5} BTU/W (ประมาณ)`;
+  const saved=DB[ac.a];
+  if(saved){
+    const d=saved;
+    sv('v1',d.v1);sv('v2',d.v2);sv('a1',d.a1);sv('a2',d.a2);sv('a3',d.a3);
+    sv('pf',d.pf);sv('t-s',d.ts);sv('t-r',d.tr);sv('t-c',d.tc);
+    sv('t-room',d.room);sv('rh',d.rh);sv('ff',d.ff);sv('note',d.note||'');
+    document.getElementById('i-dtag').innerHTML='<span class="saved-tag">✓ บันทึกแล้ว</span>';
+  } else {
+    const d=ac.demo;
+    sv('v1',d.v1);sv('v2',d.v2);sv('a1',d.a1);sv('a2',d.a2);sv('a3',d.a3);
+    sv('pf',d.pf);sv('t-s',d.ts);sv('t-r',d.tr);sv('t-c',d.tc);
+    sv('t-room',d.room);sv('rh',d.rh);sv('ff',d.ff);sv('note',d.note||'');
+    document.getElementById('i-dtag').innerHTML='<span class="demo-tag">Demo</span>';
+  }
+  calc();
+}
+
+function calcKW(v1,v2,a1,a2,a3,pf,ff){
+  const vA=v1&&v2?(v1+v2)/2:v1||v2;
+  const arr=[a1,a2,a3].filter(x=>x>0);
+  const aA=arr.reduce((s,v)=>s+v,0)/arr.length;
+  const ph=arr.length;
+  const kw=ph>=2?(Math.sqrt(3)*vA*aA*pf/1000):(vA*aA*pf/1000);
+  return kw/parseFloat(document.getElementById('ff').value||'1');
+}
+
+function calcSaving(btu,eer,is24){
+  if(eer<=0)return 0;
+  const dk=btu/1000*(1/eer-1/11.5);
+  const h=is24?8760*0.85:286*12*0.65;
+  return Math.round(dk*h*(is24?3.44:4.10));
+}
+
+function calc(){
+  if(curIdx===null)return;
+  const ac=ACS[curIdx];
+  const v1=g('v1'),v2=g('v2'),a1=g('a1'),a2=g('a2'),a3=g('a3'),pf=g('pf');
+  const ts=g('t-s'),tr=g('t-r'),tc=g('t-c');
+  const kw=calcKW(v1,v2,a1,a2,a3,pf);
+  const eer=kw>0.05?ac.btu/(kw*1000):0;
+  const dt=tr-ts;
+  const saving=calcSaving(ac.btu,eer,ac.is24);
+  const pct=Math.round((eer/11.5)*100);
+  document.getElementById('kw-out').textContent=kw>0.05?kw.toFixed(2)+' kW':'—';
+  document.getElementById('kw2').textContent=kw>0.05?kw.toFixed(2)+' kW':'—';
+  document.getElementById('dt-out').textContent=dt>0?dt.toFixed(1)+'°C':'—';
+  if(eer>0){
+    document.getElementById('eer-out').textContent=eer.toFixed(2)+' BTU/W';
+    const bp=Math.min(100,(eer/14)*100);
+    const bc=eer<7?'#E24B4A':eer<9?'#EF9F27':'#4CAF50';
+    document.getElementById('eer-bar').style.cssText=`width:${bp.toFixed(0)}%;background:${bc}`;
+    document.getElementById('eff-out').textContent=pct+'%';
+    document.getElementById('eff-out').style.color=eer<7?'var(--danger-text)':eer<9?'var(--warn-text)':'var(--success-text)';
+    const vbox=document.getElementById('verdict');
+    let cls,icon,title,detail;
+    const dtw=dt<6?' ⚠ ΔT ต่ำผิดปกติ':'';
+    const tcw=tc>55?' ⚠ Condenser ร้อนเกิน':'';
+    if(eer<7){
+      cls='v-red';icon='ti-alert-triangle';
+      title=`⚠ เปลี่ยนทันที — EER ${eer.toFixed(2)} BTU/W (${pct}% ของเบอร์ 5)`;
+      detail=`ΔT=${dt.toFixed(1)}°C${dtw} | T Cond=${tc}°C${tcw} | กำลัง=${kw.toFixed(2)} kW | ควรเสนอของบประมาณทดแทนปีงบ 2569`;
+    }else if(eer<9){
+      cls='v-amber';icon='ti-clock';
+      title=`⏱ แผน 1–2 ปี — EER ${eer.toFixed(2)} BTU/W (${pct}% ของเบอร์ 5)`;
+      detail=`ΔT=${dt.toFixed(1)}°C${dtw} | T Cond=${tc}°C${tcw} | วางแผนเปลี่ยนใน 1–2 ปี | ล้าง Filter ทุก 3 เดือน`;
+    }else{
+      cls='v-green';icon='ti-circle-check';
+      title=`✓ ดูแลรักษา — EER ${eer.toFixed(2)} BTU/W (${pct}% ของเบอร์ 5)`;
+      detail=`ΔT=${dt.toFixed(1)}°C | T Cond=${tc}°C | สภาพยังดี ดูแลรักษาตามปกติ ล้าง Filter ทุก 3 เดือน`;
+    }
+    vbox.className='verdict show '+cls;
+    vbox.innerHTML=`<i class="ti ${icon}"></i><div class="verdict-body"><div class="verdict-title">${title}</div><div class="verdict-detail">${detail}</div></div><div class="verdict-right"><div class="lbl">ประหยัดได้/ปี (ถ้าเปลี่ยน)</div><div class="val">${saving>0?saving.toLocaleString()+' บาท':'—'}</div></div>`;
+  }else{
+    document.getElementById('eer-out').textContent='—';
+    document.getElementById('eff-out').textContent='—';
+    document.getElementById('eer-bar').style.width='0%';
+    document.getElementById('verdict').className='verdict';
+  }
+}
+
+function saveMeasure(){
+  if(curIdx===null){alert('กรุณาเลือกเครื่องก่อน');return;}
+  const ac=ACS[curIdx];
+  const a1=g('a1');if(!a1){alert('กรุณากรอกกระแส (A) อย่างน้อย 1 Phase');return;}
+  const v1=g('v1'),v2=g('v2'),a2=g('a2'),a3=g('a3'),pf=g('pf');
+  const ts=g('t-s'),tr=g('t-r'),tc=g('t-c');
+  const ff=document.getElementById('ff').value;
+  const kw=calcKW(v1,v2,a1,a2,a3,pf);
+  const eer=kw>0.05?ac.btu/(kw*1000):0;
+  const dt=tr-ts;
+  const saving=calcSaving(ac.btu,eer,ac.is24);
+  const vd=eer<7?'เปลี่ยนทันที':eer<9?'แผน 1–2 ปี':'ดูแลรักษา';
+  DB[ac.a]={v1,v2,a1,a2,a3,pf,ts,tr,tc,room:g('t-room'),rh:g('rh'),ff,
+    note:document.getElementById('note').value,kw,eer,dt,saving,verdict:vd,cost:ac.cost,
+    asset:ac.a,btu:ac.btu,owner:ac.owner,loc:ac.loc,date:document.getElementById('meas-date').value};
+  document.getElementById('li-'+curIdx).classList.add('saved');
+  document.getElementById('i-dtag').innerHTML='<span class="saved-tag">✓ บันทึกแล้ว</span>';
+  toast(`✓ บันทึก ${ac.a} | EER ${eer.toFixed(2)} BTU/W | ${vd} | ประหยัด ${saving.toLocaleString()} บาท/ปี`,'#1A6B38');
+  updateSidebarStats();
+}
+
+function clearForm(){
+  ['v1','v2','a1','a2','a3','pf','t-s','t-r','t-c','t-room','rh','note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ff').value='1.00';
+  document.getElementById('eer-out').textContent='—';
+  document.getElementById('kw-out').textContent='—';
+  document.getElementById('kw2').textContent='—';
+  document.getElementById('dt-out').textContent='—';
+  document.getElementById('eff-out').textContent='—';
+  document.getElementById('eer-bar').style.width='0%';
+  document.getElementById('verdict').className='verdict';
+}
+
+function loadDemo(){
+  ACS.forEach((ac,i)=>{
+    const d=ac.demo;
+    const ff2=parseFloat(d.ff);
+    const vA=(d.v1+d.v2)/2;
+    const arr=[d.a1,d.a2,d.a3].filter(x=>x>0);
+    const aA=arr.reduce((s,v)=>s+v,0)/arr.length;
+    const kw=(Math.sqrt(3)*vA*aA*d.pf/1000)/ff2;
+    const eer=kw>0.05?ac.btu/(kw*1000):0;
+    const dt=d.tr-d.ts;
+    const saving=calcSavingRaw(ac.btu,eer,ac.is24);
+    const vd=eer<7?'เปลี่ยนทันที':eer<9?'แผน 1–2 ปี':'ดูแลรักษา';
+    DB[ac.a]={v1:d.v1,v2:d.v2,a1:d.a1,a2:d.a2,a3:d.a3,pf:d.pf,ts:d.ts,tr:d.tr,tc:d.tc,
+      room:d.room,rh:d.rh,ff:d.ff,note:d.note,kw,eer,dt,saving,verdict:vd,
+      cost:ac.cost,asset:ac.a,btu:ac.btu,owner:ac.owner,loc:ac.loc,
+      date:document.getElementById('meas-date').value};
+    document.getElementById('li-'+i).classList.add('saved');
+  });
+  updateSidebarStats();
+  if(curIdx!==null)selectAC(curIdx);
+  toast('โหลดข้อมูล Demo ครบ 27 เครื่อง เรียบร้อยแล้ว','#1B3A5C');
+}
+
+function calcSavingRaw(btu,eer,is24){
+  if(eer<=0)return 0;
+  const dk=btu/1000*(1/eer-1/11.5);
+  const h=is24?8760*0.85:286*12*0.65;
+  return Math.round(dk*h*(is24?3.44:4.10));
+}
+
+function updateSidebarStats(){
+  const rows=Object.values(DB);
+  document.getElementById('s-done').textContent=rows.length;
+  document.getElementById('s-red').textContent=rows.filter(r=>r.eer>0&&r.eer<7).length;
+  document.getElementById('s-amb').textContent=rows.filter(r=>r.eer>=7&&r.eer<9).length;
+  document.getElementById('s-grn').textContent=rows.filter(r=>r.eer>=9).length;
+}
+
+function buildSummary(){
+  const rows=Object.values(DB);
+  document.getElementById('sum-done').textContent=rows.length;
+  document.getElementById('sum-red').textContent=rows.filter(r=>r.eer>0&&r.eer<7).length;
+  document.getElementById('sum-amb').textContent=rows.filter(r=>r.eer>=7&&r.eer<9).length;
+  document.getElementById('sum-grn').textContent=rows.filter(r=>r.eer>=9).length;
+  const prog=document.getElementById('sum-prog');
+  prog.style.width=Math.round(rows.length/27*100)+'%';
+  const tbody=document.getElementById('sum-body');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="10" class="td-center" style="padding:24px;color:var(--text3);font-style:italic">ยังไม่มีข้อมูล — กลับไปแท็บ "ตรวจวัด" หรือกด "โหลดข้อมูล Demo"</td></tr>';return;}
+  tbody.innerHTML='';
+  let tC=0,tS=0;
+  [...rows].sort((a,b)=>a.eer-b.eer).forEach(r=>{
+    const bg=r.eer<7?'#FFEBEE':r.eer<9?'#FFF8E1':'#F1F8E9';
+    const ec=r.eer<7?'var(--danger-text)':r.eer<9?'var(--warn-text)':'var(--success-text)';
+    const bcls=r.eer<7?'badge-r':r.eer<9?'badge-a':'badge-g';
+    const chg=r.verdict!=='ดูแลรักษา'?r.cost:0;
+    tC+=chg;tS+=r.saving;
+    const dtw=r.dt<6?'color:var(--danger-text);font-weight:600':'';
+    const tcw=r.tc>55?'color:var(--danger-text);font-weight:600':'';
+    tbody.innerHTML+=`<tr style="background:${bg}">
+      <td>${r.asset}</td>
+      <td class="td-center">${(r.btu/1000).toFixed(0)}k</td>
+      <td class="td-center">${r.kw.toFixed(2)}</td>
+      <td class="td-center" style="font-weight:600;color:${ec}">${r.eer.toFixed(2)}</td>
+      <td class="td-center" style="${dtw}">${r.dt.toFixed(1)}</td>
+      <td class="td-center" style="${tcw}">${r.tc||'—'}</td>
+      <td class="td-center">${r.rh||'—'}</td>
+      <td class="td-right" style="color:var(--green);font-weight:500">${r.saving.toLocaleString()}</td>
+      <td class="td-center"><span class="badge ${bcls}">${r.verdict}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${r.note||'—'}</td>
+    </tr>`;
+  });
+  const fr=document.getElementById('fin-row');
+  if(tC>0||tS>0){
+    fr.className='fin-row show';
+    document.getElementById('f-cost').textContent=tC.toLocaleString()+' บาท';
+    document.getElementById('f-save').textContent=tS.toLocaleString()+' บาท/ปี';
+    document.getElementById('f-pb').textContent=tS>0?(tC/tS).toFixed(1)+' ปี':'—';
+    const co2=Math.round(tS/4.10*0.5765/1000);
+    document.getElementById('f-co2').textContent='~'+co2.toLocaleString()+' ตัน/ปี';
+  }
+}
+
+function buildReport(){
+  const rows=Object.values(DB);
+  if(!rows.length){document.getElementById('rpt').textContent='กรุณาบันทึกข้อมูลก่อน หรือกด "โหลดข้อมูล Demo" แล้วกลับมาดูรายงาน';return;}
+  const now=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+  const reds=rows.filter(r=>r.eer>0&&r.eer<7);
+  const ambs=rows.filter(r=>r.eer>=7&&r.eer<9);
+  const grns=rows.filter(r=>r.eer>=9);
+  const tC=rows.filter(r=>r.verdict!=='ดูแลรักษา').reduce((s,r)=>s+r.cost,0);
+  const tS=rows.reduce((s,r)=>s+r.saving,0);
+  const pb=tS>0?(tC/tS).toFixed(1)+' ปี':'—';
+  const co2=Math.round(tS/4.10*0.5765/1000);
+  const redBudget=reds.reduce((s,r)=>s+r.cost,0);
+  const redSave=reds.reduce((s,r)=>s+r.saving,0);
+  const redPB=redSave>0?(redBudget/redSave).toFixed(1)+' ปี':'—';
+
+  const hdr=`${'─'.repeat(64)}`;
+  let t=`บันทึกข้อความ
+เรื่อง   รายงานผลการตรวจวัดสมรรถนะเครื่องปรับอากาศ Priority 1
+         และข้อเสนอแผนปรับปรุงประสิทธิภาพการใช้พลังงาน
+เรียน   ผู้อำนวยการสำนักงานมาตรฐานผลิตภัณฑ์อุตสาหกรรม
+จาก    กลุ่มพัฒนาระบบบริหาร / ผู้ตรวจสอบพลังงาน
+วันที่   ${now}
+${hdr}
+
+๑.  ความเป็นมา
+    ตามแผนอนุรักษ์พลังงานอาคาร สมอ. ได้ดำเนินการตรวจวัดสมรรถนะ
+    เครื่องปรับอากาศที่มีลำดับความสำคัญ Priority 1 (คะแนน ≥ 55/100)
+    จำนวน ${rows.length} เครื่อง จากทั้งหมด 27 เครื่อง โดยใช้เครื่องมือ
+    Clamp Meter (True RMS), Power Analyzer และ IR Thermometer
+    วัดกระแส แรงดัน กำลังไฟจริง และอุณหภูมิ เพื่อคำนวณ EER จริง
+
+๒.  ผลการตรวจวัด (${rows.length}/27 เครื่อง)
+${hdr}
+${'ครุภัณฑ์'.padEnd(13)}${'BTU'.padEnd(8)}${'kW'.padEnd(8)}${'EER'.padEnd(8)}${'ΔT°C'.padEnd(7)}${'T Cond'.padEnd(9)}${'สรุปผล'.padEnd(16)}${'ประหยัด/ปี'}
+${hdr}
+${[...rows].sort((a,b)=>a.eer-b.eer).map(r=>
+  r.asset.padEnd(13)+
+  ((r.btu/1000).toFixed(0)+'k').padEnd(8)+
+  r.kw.toFixed(2).padEnd(8)+
+  r.eer.toFixed(2).padEnd(8)+
+  r.dt.toFixed(1).padEnd(7)+
+  String(r.tc||'—').padEnd(9)+
+  r.verdict.padEnd(16)+
+  r.saving.toLocaleString()+' บาท'
+).join('\n')}
+${hdr}
+
+๓.  สรุปผลแยกประเภท
+    ก)  ต้องเปลี่ยนทันที (EER < 7.0 BTU/W)       : ${reds.length} เครื่อง
+${reds.map(r=>`        •  ${r.asset} : EER = ${r.eer.toFixed(2)} BTU/W | ประหยัด ${r.saving.toLocaleString()} บาท/ปี${r.note?' | '+r.note:''}`).join('\n')||'        •  ไม่มี'}
+
+    ข)  ควรวางแผนเปลี่ยน 1–2 ปี (EER 7.0–9.0)   : ${ambs.length} เครื่อง
+${ambs.map(r=>`        •  ${r.asset} : EER = ${r.eer.toFixed(2)} BTU/W | ประหยัด ${r.saving.toLocaleString()} บาท/ปี${r.note?' | '+r.note:''}`).join('\n')||'        •  ไม่มี'}
+
+    ค)  ดูแลรักษาตามปกติ (EER > 9.0)             : ${grns.length} เครื่อง
+${grns.map(r=>`        •  ${r.asset} : EER = ${r.eer.toFixed(2)} BTU/W`).join('\n')||'        •  ไม่มี'}
+
+๔.  ผลประโยชน์ทางการเงิน
+${hdr}
+    รายการ                           จำนวนเงิน
+    งบประมาณเปลี่ยนทดแทนรวม          ${tC.toLocaleString()} บาท
+    ประหยัดค่าไฟฟ้า/ปี               ${tS.toLocaleString()} บาท/ปี
+    ระยะเวลาคืนทุน (Payback)         ${pb}
+    ลดการปล่อย CO₂                   ~${co2.toLocaleString()} ตัน CO₂/ปี
+${hdr}
+    ** เฉพาะเครื่องเปลี่ยนทันที (กลุ่ม ก.) **
+    งบประมาณเปลี่ยน                  ${redBudget.toLocaleString()} บาท
+    ประหยัด/ปี                       ${redSave.toLocaleString()} บาท/ปี
+    Payback                          ${redPB}
+    อัตราค่าไฟอ้างอิง: On-Peak 4.10 บาท/kWh, Off-Peak 2.78 บาท/kWh (MEA 3.2.2 ปี 2568)
+
+๕.  ข้อเสนอแนะ
+    ๕.๑ ขอเสนอของบประมาณปีงบ 2569 (เร่งด่วน) สำหรับเครื่องกลุ่ม ก.
+        ที่ EER < 7.0 BTU/W จำนวน ${reds.length} เครื่อง วงเงิน ${redBudget.toLocaleString()} บาท
+        คาดว่าจะได้รับเงินคืนภายใน ${redPB} นับจากวันติดตั้ง
+    ๕.๒ กำหนดคุณสมบัติ TOR สำหรับจัดซื้อ:
+        -  ระบบ Inverter มาตรฐานเบอร์ 5 (มอก. 1155)
+        -  EER ≥ 11.5 BTU/W (ขนาด 24,000–40,000 BTU)
+        -  สารทำความเย็น R-32 (GWP ต่ำ เป็นมิตรสิ่งแวดล้อม)
+        -  รับประกันคอมเพรสเซอร์ไม่น้อยกว่า 5 ปี
+    ๕.๓ วัด EER ยืนยันหลังติดตั้งภายใน 30 วัน เพื่อรับรองผลประหยัด
+    ๕.๔ กำหนดแผนล้างทำความสะอาด Filter ทุก 3 เดือน สำหรับเครื่องที่
+        ยังรอการเปลี่ยน เพื่อรักษาประสิทธิภาพในระหว่างรอ
+
+    จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ
+
+                              ลงชื่อ ....................................
+                                     (..................................)
+                              ตำแหน่ง ....................................
+                              วันที่   ${now}`;
+
+  document.getElementById('rpt').textContent=t;
+}
+
+function copyReport(){
+  const txt=document.getElementById('rpt').textContent;
+  navigator.clipboard.writeText(txt)
+    .then(()=>toast('คัดลอกรายงานแล้ว — วางใน Word ได้เลย','#1A6B38'))
+    .catch(()=>toast('ไม่สามารถคัดลอกอัตโนมัติ — กรุณาเลือกข้อความแล้ว Ctrl+C','#A32D2D'));
+}
+
+function showTab(name,btn){
+  ['measure','summary','report'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===name?'flex':'none';
+    if(t===name)document.getElementById('tab-'+t).style.flexDirection='column';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='summary')buildSummary();
+  if(name==='report')buildReport();
+}
+
+function toast(msg,bg='#1B3A5C'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.background=bg;
+  el.className='toast show';
+  setTimeout(()=>el.className='toast',4000);
+}
+
+document.getElementById('tab-measure').style.display='flex';
+document.getElementById('tab-measure').style.flexDirection='column';
+</script>
+</body>
+</html>
